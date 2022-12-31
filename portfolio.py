@@ -170,6 +170,7 @@ class Portfolio:
         for house in self.houses:
             house.wait_one_month(int(self.year))
             house.make_a_payment()
+
             cash = house.cash - house.income * self.income_tax_rate
             self.add_to_stocks(cash)
             house.cash = 0

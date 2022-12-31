@@ -22,7 +22,7 @@ portfolio.buy_a_house(
     down_payment_fraction=down_payment_fraction,
     years_on_loan=years_on_loan,
 )
-net_worth_history = [portfolio.get_net_worth()]
+net_worth_history = [capital]
 for month in range(years_on_loan * 12):
     portfolio.increment_one_month()
     net_worth_history.append(portfolio.get_net_worth(after_capital_gains_tax=True))
