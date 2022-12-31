@@ -43,7 +43,6 @@ class House:
             monthly_fees: float,
             monthly_rent_collected: float,
     ) -> None:
-        # TODO: Add profit attribute and calculate taxes
         self.equity = equity
         self.principal = principal
         self.monthly_interest_rate = loan_apr / 100 / 12
@@ -51,15 +50,19 @@ class House:
         self.monthly_fees = monthly_fees
         self.monthly_rent_collected = monthly_rent_collected
         self.cash = 0
+        self.capital_gains = 0
+        self.income = 0
 
         self.house_value = equity + principal
 
     def wait_one_month(self, year: int) -> None:
         monthly_housing_growth_rate = get_monthly_housing_growth_rate(year)
         increase_in_value = self.house_value * monthly_housing_growth_rate
+        self.capital_gains += increase_in_value
         self.equity += increase_in_value
         self.house_value += increase_in_value
         self.cash += self.monthly_rent_collected
+        self.income += self.monthly_rent_collected
         self.monthly_rent_collected *= 1 + monthly_housing_growth_rate
 
     def make_a_payment(self, payment_amount: float = None) -> None:
@@ -76,6 +79,7 @@ class House:
         self.equity += principal_paid
         self.principal -= principal_paid
         self.cash -= payment_amount
+        self.income -= interest_paid + self.monthly_fees
 
 
 class Stocks:
@@ -84,17 +88,19 @@ class Stocks:
             initial_investment: float = 0,
             yearly_growth_factor: float = 1.09,
     ) -> None:
-        # TODO: Add taxes calculation
         self.amount_invested = initial_investment
         self.yearly_growth_factor = yearly_growth_factor
+        self.capital_gains = 0
 
     def add_to_investment(self, amount: float) -> None:
         self.amount_invested += amount
         assert self.amount_invested >= 0, "Amount invested cannot be negative"
 
     def wait(self, years: float) -> None:
-        growth_factor = self.yearly_growth_factor ** years
-        self.amount_invested *= growth_factor
+        growth_fraction = self.yearly_growth_factor ** years - 1
+        increase_in_value = self.amount_invested * growth_fraction
+        self.amount_invested += increase_in_value
+        self.capital_gains += increase_in_value
 
 
 class Portfolio:
@@ -102,12 +108,16 @@ class Portfolio:
             self,
             capital: float,
             starting_year: float,
-            monthly_income: float = 0,
+            monthly_investment: float = 0,
+            income_tax_rate: float = 0.30,
+            capital_gains_tax_rate: float = 0.15,
     ) -> None:
         self.houses = []
         self.stocks = Stocks(initial_investment=capital)
-        self.monthly_income = monthly_income
+        self.monthly_investment = monthly_investment
         self.year = starting_year
+        self.income_tax_rate = income_tax_rate
+        self.capital_gains_tax_rate = capital_gains_tax_rate
 
     def add_to_stocks(self, amount: float) -> None:
         self.stocks.amount_invested += amount
@@ -160,14 +170,18 @@ class Portfolio:
         for house in self.houses:
             house.wait_one_month(int(self.year))
             house.make_a_payment()
-            self.add_to_stocks(house.cash)
+            cash = house.cash - house.income * self.income_tax_rate
+            self.add_to_stocks(cash)
             house.cash = 0
-        self.add_to_stocks(self.monthly_income)
+            house.income = 0
+        self.add_to_stocks(self.monthly_investment)
 
-    def get_net_worth(self) -> float:
-        net_worth = self.stocks.amount_invested
+    def get_net_worth(self, after_capital_gains_tax=True) -> float:
+        net_worth = self.stocks.amount_invested - \
+                    self.stocks.capital_gains * self.capital_gains_tax_rate * after_capital_gains_tax
         for house in self.houses:
-            net_worth += house.equity
+            net_worth += house.equity - \
+                         house.capital_gains * self.capital_gains_tax_rate * after_capital_gains_tax
         return net_worth
 
     def get_liquid_assets(self) -> float:
