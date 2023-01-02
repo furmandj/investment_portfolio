@@ -3,7 +3,7 @@
 This repo houses simple tools to simulate two kinds of investments over time:
 
 1. Stocks
-2. Houses
+2. Real estate
 
 I created this to fit my style of investing which is to put all of my liquid assets into S&P500 index funds. Now that I am thinking about branching out into real estate investments, I wanted a way to compare stock returns to returns on houses, and compare house loans to each other. This seemed a little too complicated to just work out on paper, so I created the tools in this repo to simulate these investments.
 
@@ -24,7 +24,7 @@ These two assumptions together mean that the difference between the current YOY 
 
 Am I worried about these assumptions? Not really. Compared to the assumptions that the user must input to the model, such as the rate of return in the stock market or how much it will cost to maintain a house, I suspect that the implications of the preceding assumptions are rather small. Furthermore, I am quite confident that adding these assumptions into the model is better than the alternative assumption, which is that housing prices continue to grow at the average rate that they have grown over the past 60 years or whatever.
 
-There is one other assumption, but I believe this one is quite solid: Rent increase is proportional the increase in property value.
+There is one other assumption, but I believe this one is quite solid: Rent increase is proportional to the increase in property value.
 
 # How complex is the model? Does it model everything?
 
