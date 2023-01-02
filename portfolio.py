@@ -1,8 +1,21 @@
+"""
+The classes in this file were built with the intention of comparing stock
+investments to real estate investments, and further to compare different
+real estate investments to each other.
+"""
 import pandas as pd
 
 
 class EconomyData:
-    def __init__(self,):
+    def __init__(self):
+        """
+        This class houses the following economic data:
+        - average inflation rate
+        - population over time
+        - median house price over time
+        And some of their derivatives that allow us to estimate the median
+        house prices into the future.
+        """
         self.inflation_rate = 0.038  # Average inflation rate according to worlddata.info
 
         self.house_prices = pd.read_csv('US_median_housing_prices.csv')
@@ -61,7 +74,7 @@ class EconomyData:
         which people buy their first house is 33. So, we can simply
         look back at the population growth rate 33 years ago to
         estimate the growth rate of the number of people who want to
-        buy houses. We then adjust the historical growth rate of
+        buy houses today. We then adjust the historical growth rate of
         house prices by subtracting off the delta between the current
         year-over-year (YOY) growth in demand vs the historical YOY
         growth in demand calculated over the same time period as the
@@ -174,8 +187,6 @@ class House:
             "Payment cannot be less than the minimum monthly payment"
         interest_paid = self.principal * self.monthly_interest_rate
         if self.principal + interest_paid + self.monthly_fees < payment_amount:
-            if self.principal > 0:
-                print(f'You paid off the remaining principal of {self.principal}.')
             payment_amount = self.principal + interest_paid + self.monthly_fees
         principal_paid = payment_amount - interest_paid - self.monthly_fees
         self.equity += principal_paid
@@ -188,7 +199,7 @@ class Stocks:
     def __init__(
             self,
             initial_investment: float = 0,
-            yearly_growth_factor: float = 1.09,
+            yearly_growth_factor: float = 1.1,
     ) -> None:
         """
         Keeps track of the value of your stock portfolio, as well as
@@ -197,9 +208,9 @@ class Stocks:
         :param initial_investment: (float, optional) The initial amount
             you want to put into stocks. Default: 0
         :param yearly_growth_factor: (float, optional) YOY growth factor.
-            1.09 was chosen because the average return of S&P500 seems to
-            be around 9% (though different numbers get thrown around).
-            Default: 1.09
+            1.1 was chosen because the average return of S&P500 seems to
+            be around 10% (though different numbers also get thrown around).
+            Default: 1.1
         """
         self.amount_invested = initial_investment
         self.yearly_growth_factor = yearly_growth_factor
@@ -363,7 +374,7 @@ class Portfolio:
             house.income = 0
         self.add_to_portfolio(self.monthly_investment)
 
-    def get_net_worth(self, after_capital_gains_tax=True, adjust_for_inflation=True) -> float:
+    def get_net_worth(self, after_capital_gains_tax=False, adjust_for_inflation=False) -> float:
         """
         Calculates the net worth of the portfolio
 
