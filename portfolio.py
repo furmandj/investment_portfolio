@@ -105,9 +105,11 @@ class House:
         :param equity: Amount the house is worth minus the principal
         :param principal: The amount still owed on the loan
         :param loan_apr: APR % of the loan
-        :param property_tax_frac: yearly property tax: fraction of house_value
+        :param property_tax_frac: fraction applied to house_value to get
+            the yearly property tax.
         :param min_monthly_payment: The minimum monthly payment on the loan
-        :param monthly_fees: Other fees such as HOA fees that are paid monthly
+        :param monthly_fees: The sum of all fees that are paid monthly. This
+            includes HOA fees, homeowners insurance, and maintenance.
         :param monthly_rent_collected: The amount of rent that can be collected
             monthly
         """
@@ -304,8 +306,10 @@ class Portfolio:
             costs, such as closing costs, included)
         :param closing_costs: Closing costs
         :param loan_apr: APR % of the loan
-        :param property_tax_frac: yearly property tax: fraction of house_value
-        :param monthly_fees: Fees such as HOA fees that are paid monthly
+        :param property_tax_frac: fraction applied to house_value to get
+            the yearly property tax.
+        :param monthly_fees: The sum of all fees that are paid monthly. This
+            includes HOA fees, homeowners insurance, and maintenance.
         :param monthly_rent_collected: Amount of monthly rent that can
             be charged once the house gets rented out.
         :param down_payment_fraction: Fraction of the house price that
