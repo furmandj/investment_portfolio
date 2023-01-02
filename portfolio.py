@@ -1,63 +1,90 @@
 import pandas as pd
 
 
-def get_monthly_housing_growth_rate(year: int) -> float:
-    """
-    The median price of houses over a long time period seems to be
-    dictated by inflation and population growth. Assuming average
-    inflation is the same as its historical values, we can just
-    look at population growth rates. Luckily for us, we know the
-    future of the effective population growth rates because we
-    don't actually care about how many babies are born. We just
-    care about the number of people who want to buy houses, which
-    is predictable since we know how many people were born over
-    the last 30+ years. According to Google, the average age at
-    which people buy their first house is 33. So, we can simply
-    look back at the population growth rate 33 years ago to
-    estimate the growth rate of the number of people who want to
-    buy houses. We then adjust the historical growth rate of
-    house prices by subtracting off the delta between the current
-    year-over-year (YOY) growth in demand vs the historical YOY
-    growth in demand calculated over the same time period as the
-    historical housing prices. This allows us to estimate the
-    growth rate of house prices 33 years into the future. This
-    population data set actually has estimates of future US
-    populations out to 2100, so we can go further out, but with
-    less certainty.
+class EconomyData:
+    def __init__(self,):
+        self.inflation_rate = 0.038  # Average inflation rate according to worlddata.info
 
-    :param year: The year we are interested in. E.g. 2025
-    :return: The estimated monthly rate of growth in median
-        house price.
-    """
-    house_prices = pd.read_csv('US_median_housing_prices.csv')
-    population = pd.read_csv('US_population.csv')
+        self.house_prices = pd.read_csv('US_median_housing_prices.csv')
+        self.population = pd.read_csv('US_population.csv')
 
-    house_prices['year'] = house_prices.DATE.str.slice(0, 4)
-    house_prices = house_prices[['MSPUS', 'year']].groupby('year').mean().reset_index()
-    population['year'] = population.date.str.slice(0, 4)
+        self.house_prices['year'] = self.house_prices.DATE.str.slice(0, 4)
+        house_prices = self.house_prices[['MSPUS', 'year']].groupby('year').mean().reset_index()
+        self.population['year'] = self.population.date.str.slice(0, 4)
 
-    population['year'] = population['year'].astype(float)
-    house_prices['year'] = house_prices['year'].astype(float)
+        self.population['year'] = self.population['year'].astype(float)
+        house_prices['year'] = house_prices['year'].astype(float)
 
-    start_year = 1983
-    end_year = 2022
-    n_years = end_year - start_year
-    average_age_to_buy_house = 33  # source: Google
-    starting_population = population[population.year == start_year - average_age_to_buy_house].population.item()
-    ending_population = population[population.year == end_year - average_age_to_buy_house].population.item()
-    starting_house_price = house_prices[house_prices.year == start_year].MSPUS.item()
-    ending_house_price = house_prices[house_prices.year == end_year].MSPUS.item()
+        start_year = 1983
+        end_year = 2022
+        n_years = end_year - start_year
+        self.average_age_to_buy_house = 33  # source: Google
 
-    historical_population_growth_factor = (ending_population / starting_population) ** (1 / n_years)
-    historical_house_price_growth_factor = (ending_house_price / starting_house_price) ** (1 / n_years)
+        starting_population = self.population[
+            self.population.year == start_year - self.average_age_to_buy_house].population.item()
+        ending_population = self.population[
+            self.population.year == end_year - self.average_age_to_buy_house].population.item()
 
-    current_population_growth_factor = population[
-        population.year == year - average_age_to_buy_house
-    ]['Annual % Change'].item() / 100 + 1
-    current_estimated_house_price_growth_factor = historical_house_price_growth_factor \
-                                                + current_population_growth_factor \
-                                                - historical_population_growth_factor
-    return current_estimated_house_price_growth_factor ** (1 / 12) - 1
+        starting_house_price = house_prices[house_prices.year == start_year].MSPUS.item()
+        ending_house_price = house_prices[house_prices.year == end_year].MSPUS.item()
+
+        self.historical_population_growth_factor = self.get_historical_growth_factor(
+            starting_population,
+            ending_population,
+            n_years
+        )
+        self.historical_house_price_growth_factor = self.get_historical_growth_factor(
+            starting_house_price,
+            ending_house_price,
+            n_years
+        )
+
+    @staticmethod
+    def get_historical_growth_factor(
+            starting_value: float,
+            ending_value: float,
+            n_years: float,
+    ) -> float:
+        return (ending_value / starting_value) ** (1 / n_years)
+
+    def get_monthly_housing_growth_rate(self, year: int) -> float:
+        """
+        The median price of houses over a long time period seems to be
+        dictated by inflation and population growth. Assuming average
+        inflation is the same as its historical values, we can just
+        look at population growth rates. Luckily for us, we know the
+        future of the effective population growth rates because we
+        don't actually care about how many babies are born. We just
+        care about the number of people who want to buy houses, which
+        is predictable since we know how many people were born over
+        the last 30+ years. According to Google, the average age at
+        which people buy their first house is 33. So, we can simply
+        look back at the population growth rate 33 years ago to
+        estimate the growth rate of the number of people who want to
+        buy houses. We then adjust the historical growth rate of
+        house prices by subtracting off the delta between the current
+        year-over-year (YOY) growth in demand vs the historical YOY
+        growth in demand calculated over the same time period as the
+        historical housing prices. This allows us to estimate the
+        growth rate of house prices 33 years into the future. This
+        population data set actually has estimates of future US
+        populations out to 2100, so we can go further out, but with
+        less certainty.
+
+        :param year: The year we are interested in. E.g. 2025
+        :return: The estimated monthly rate of growth in median
+            house price.
+        """
+        if year + self.average_age_to_buy_house > 2100:
+            current_population_growth_factor = self.population.iloc[-1]['Annual % Change'].item() / 100 + 1
+        else:
+            current_population_growth_factor = self.population[
+                self.population.year == year - self.average_age_to_buy_house
+            ]['Annual % Change'].item() / 100 + 1
+        current_estimated_house_price_growth_factor = self.historical_house_price_growth_factor \
+                                                    + current_population_growth_factor \
+                                                    - self.historical_population_growth_factor
+        return current_estimated_house_price_growth_factor ** (1 / 12) - 1
 
 
 class House:
@@ -66,18 +93,19 @@ class House:
             equity: float,
             principal: float,
             loan_apr: float,
+            property_tax_frac: float,
             min_monthly_payment: float,
             monthly_fees: float,
             monthly_rent_collected: float,
     ) -> None:
         """
-        TODO: Add property tax. Note that this is based on house_value
         This class keeps track of a house loan, collected
         rent, taxable income, and capital gains.
 
         :param equity: Amount the house is worth minus the principal
         :param principal: The amount still owed on the loan
         :param loan_apr: APR % of the loan
+        :param property_tax_frac: yearly property tax: fraction of house_value
         :param min_monthly_payment: The minimum monthly payment on the loan
         :param monthly_fees: Other fees such as HOA fees that are paid monthly
         :param monthly_rent_collected: The amount of rent that can be collected
@@ -86,6 +114,7 @@ class House:
         self.equity = equity
         self.principal = principal
         self.monthly_interest_rate = loan_apr / 100 / 12
+        self.monthly_property_tax_frac = property_tax_frac / 12
         self.min_monthly_payment = min_monthly_payment + monthly_fees
         self.monthly_fees = monthly_fees
         self.monthly_rent_collected = monthly_rent_collected
@@ -96,30 +125,36 @@ class House:
         self.accumulated_growth_factor = 1
 
         self.house_value = equity + principal
+        self.monthly_property_tax = self.house_value * self.monthly_property_tax_frac
 
-    def wait_one_month(self, year: int) -> None:
+    def wait_one_month(self, monthly_housing_growth_rate: float) -> None:
         """
         This method collects the rent, updates the house_value,
         equity, taxable_income, cash on hand, and capital_gains.
 
         It also increases the rent every year proportionally to
         the house_value. The assumption is that with year-long
-        leases, we will only be able to do this yearly.
+        leases, we will only be able to do this yearly. Similarly,
+        we assume that property taxes are also only adjusted once
+        per year.
 
-        :param year: The year we are interested in. E.g. 2025
+        :param monthly_housing_growth_rate: The monthly growth
+            rate of the median house price (the monthly growth
+            factor is 1 + monthly_housing_growth_rate)
         """
         self.months_into_loan += 1
-        monthly_housing_growth_rate = get_monthly_housing_growth_rate(year)
         self.accumulated_growth_factor *= 1 + monthly_housing_growth_rate
         increase_in_value = self.house_value * monthly_housing_growth_rate
         self.capital_gains += increase_in_value
         self.equity += increase_in_value
         self.house_value += increase_in_value
-        self.cash += self.monthly_rent_collected
-        self.income += self.monthly_rent_collected
+        net_earnings = self.monthly_rent_collected - self.monthly_property_tax
+        self.cash += net_earnings
+        self.income += net_earnings
         if (self.months_into_loan % 12) == 0:
             self.monthly_rent_collected *= self.accumulated_growth_factor
             self.accumulated_growth_factor = 1
+            self.monthly_property_tax = self.house_value * self.monthly_property_tax_frac
 
     def make_a_payment(self, payment_amount: float = None) -> None:
         """
@@ -212,8 +247,10 @@ class Portfolio:
         self.stocks = Stocks(initial_investment=capital)
         self.monthly_investment = monthly_investment
         self.year = starting_year
+        self.starting_year = starting_year
         self.income_tax_rate = income_tax_rate
         self.capital_gains_tax_rate = capital_gains_tax_rate
+        self.economy_data = EconomyData()
 
     def add_to_portfolio(self, amount: float) -> None:
         """
@@ -254,6 +291,7 @@ class Portfolio:
             price: float,
             closing_costs: float,
             loan_apr: float,
+            property_tax_frac: float,
             monthly_fees: float,
             monthly_rent_collected: float,
             down_payment_fraction: float = 0.20,
@@ -266,6 +304,7 @@ class Portfolio:
             costs, such as closing costs, included)
         :param closing_costs: Closing costs
         :param loan_apr: APR % of the loan
+        :param property_tax_frac: yearly property tax: fraction of house_value
         :param monthly_fees: Fees such as HOA fees that are paid monthly
         :param monthly_rent_collected: Amount of monthly rent that can
             be charged once the house gets rented out.
@@ -289,6 +328,7 @@ class Portfolio:
             equity=down_payment,
             principal=loan_amount,
             loan_apr=loan_apr,
+            property_tax_frac=property_tax_frac,
             min_monthly_payment=min_monthly_payment,
             monthly_fees=monthly_fees,
             monthly_rent_collected=monthly_rent_collected,
@@ -307,9 +347,10 @@ class Portfolio:
         6. Adds the monthly investment to the stock portfolio
         """
         self.year += 1 / 12
+        monthly_housing_growth_rate = self.economy_data.get_monthly_housing_growth_rate(int(self.year))
         self.stocks.wait(1 / 12)
         for house in self.houses:
-            house.wait_one_month(int(self.year))
+            house.wait_one_month(monthly_housing_growth_rate)
             house.make_a_payment()
 
             cash = house.cash - house.income * self.income_tax_rate
@@ -318,7 +359,7 @@ class Portfolio:
             house.income = 0
         self.add_to_portfolio(self.monthly_investment)
 
-    def get_net_worth(self, after_capital_gains_tax=False) -> float:
+    def get_net_worth(self, after_capital_gains_tax=True, adjust_for_inflation=True) -> float:
         """
         Calculates the net worth of the portfolio
 
@@ -326,6 +367,8 @@ class Portfolio:
             subtracts off the capital gains tax. Otherwise, returns
             the net worth without considering capital gains tax.
             Default: False
+        :param adjust_for_inflation: (bool, optional) If True, adjusts
+            the net worth for inflation, so that it is in today's dollars.
         :return: The net worth of the portfolio
         """
         net_worth = self.stocks.amount_invested - \
@@ -333,4 +376,6 @@ class Portfolio:
         for house in self.houses:
             net_worth += house.equity - \
                          house.capital_gains * self.capital_gains_tax_rate * after_capital_gains_tax
+        if adjust_for_inflation:
+            net_worth /= (self.economy_data.inflation_rate + 1) ** (self.year - self.starting_year)
         return net_worth
